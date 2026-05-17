@@ -1,6 +1,7 @@
 from datetime import datetime
+import re
 from urllib.parse import urlencode
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 import json
 
 from django.shortcuts import render
@@ -16,6 +17,20 @@ DEFAULT_CITY = {
 
 KNOWN_CITIES = {
     "byculla west": DEFAULT_CITY,
+    "gorakhpur": {
+        "name": "Gorakhpur",
+        "region": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 26.7606,
+        "longitude": 83.3732,
+    },
+    "gorakhpur uttar pradesh": {
+        "name": "Gorakhpur",
+        "region": "Uttar Pradesh",
+        "country": "India",
+        "latitude": 26.7606,
+        "longitude": 83.3732,
+    },
     "phagwara": {
         "name": "Phagwara",
         "region": "Punjab",
@@ -30,6 +45,13 @@ KNOWN_CITIES = {
         "latitude": 23.3441,
         "longitude": 85.3096,
     },
+}
+
+SEARCH_REPLACEMENTS = {
+    "uttarpardesh": "uttar pradesh",
+    "uttarpradesh": "uttar pradesh",
+    "uttar pardesh": "uttar pradesh",
+    "up": "uttar pradesh",
 }
 
 WEATHER_CODES = {
@@ -57,19 +79,22 @@ WEATHER_CODES = {
 }
 
 
-def fetch_json(url, params):
+def fetch_json(url, params, headers=None):
     query = urlencode(params)
-    with urlopen(f"{url}?{query}", timeout=12) as response:
+    request = Request(f"{url}?{query}", headers=headers or {})
+    with urlopen(request, timeout=12) as response:
         return json.loads(response.read().decode("utf-8"))
 
 
-def geocode_city(query):
-    if not query:
-        return DEFAULT_CITY
-    known_city = KNOWN_CITIES.get(query.strip().lower())
-    if known_city:
-        return known_city
+def normalize_search_query(query):
+    normalized = re.sub(r"[,]+", " ", query.strip().lower())
+    normalized = re.sub(r"\s+", " ", normalized)
+    for wrong, right in SEARCH_REPLACEMENTS.items():
+        normalized = re.sub(rf"\b{re.escape(wrong)}\b", right, normalized)
+    return re.sub(r"\s+", " ", normalized).strip()
 
+
+def open_meteo_location(query):
     data = fetch_json(
         "https://geocoding-api.open-meteo.com/v1/search",
         {
@@ -81,7 +106,7 @@ def geocode_city(query):
     )
     result = (data.get("results") or [None])[0]
     if not result:
-        return DEFAULT_CITY | {"not_found": True}
+        return None
 
     return {
         "name": result["name"],
@@ -90,6 +115,86 @@ def geocode_city(query):
         "latitude": result["latitude"],
         "longitude": result["longitude"],
     }
+
+
+def nominatim_location(query):
+    data = fetch_json(
+        "https://nominatim.openstreetmap.org/search",
+        {
+            "q": query,
+            "format": "jsonv2",
+            "limit": 1,
+            "addressdetails": 1,
+            "countrycodes": "in",
+        },
+        headers={"User-Agent": "WeatherCast Django app"},
+    )
+    result = (data or [None])[0]
+    if not result:
+        return None
+
+    address = result.get("address", {})
+    name = (
+        address.get("city")
+        or address.get("town")
+        or address.get("village")
+        or address.get("suburb")
+        or result.get("name")
+        or query
+    )
+    return {
+        "name": name,
+        "region": address.get("state", ""),
+        "country": address.get("country", "India"),
+        "latitude": float(result["lat"]),
+        "longitude": float(result["lon"]),
+    }
+
+
+def pincode_location(query):
+    if not re.fullmatch(r"\d{6}", query.strip()):
+        return None
+
+    data = fetch_json(
+        f"https://api.postalpincode.in/pincode/{query.strip()}",
+        {},
+    )
+    result = (data or [None])[0]
+    post_offices = result.get("PostOffice") if result else None
+    post_office = (post_offices or [None])[0]
+    if not post_office:
+        return None
+
+    district = post_office.get("District")
+    state = post_office.get("State")
+    place_query = " ".join(
+        bit for bit in [district, state, "India"] if bit
+    )
+    location = open_meteo_location(place_query) or nominatim_location(place_query)
+    if location:
+        location["name"] = post_office.get("Name") or district or location["name"]
+        location["region"] = state or location["region"]
+    return location
+
+
+def geocode_city(query):
+    if not query:
+        return DEFAULT_CITY
+
+    normalized_query = normalize_search_query(query)
+    known_city = KNOWN_CITIES.get(normalized_query)
+    if known_city:
+        return known_city
+
+    result = (
+        pincode_location(normalized_query)
+        or open_meteo_location(normalized_query)
+        or nominatim_location(f"{normalized_query}, India")
+    )
+    if not result:
+        return DEFAULT_CITY | {"not_found": True}
+
+    return result
 
 
 def get_forecast(location):
