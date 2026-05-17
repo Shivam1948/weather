@@ -15,7 +15,7 @@ media/
 
 # Older standalone prototype files; the Django app lives in forecast/,
 # weather_project/, templates/, and static/.
-app.js
-dev-server.js
-index.html
-styles.css
+/app.js
+/dev-server.js
+/index.html
+/styles.css
