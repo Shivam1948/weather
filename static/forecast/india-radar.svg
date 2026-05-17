@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 420">
+  <defs>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="2.2"/>
+    </filter>
+    <filter id="labelShadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#ffffff" flood-opacity=".9"/>
+    </filter>
+  </defs>
+
+  <rect width="900" height="420" fill="#8cb8c7"/>
+
+  <path d="M0 38 C68 24 105 33 142 58 C187 89 225 83 263 54 C303 25 347 31 392 59 C427 81 459 79 494 64 C541 44 573 52 603 85 C642 127 693 122 744 95 C801 64 849 70 900 102 L900 0 L0 0 Z" fill="#eeeee8"/>
+  <path d="M618 0 C624 42 600 69 571 91 C543 112 509 128 500 164 C491 202 514 235 545 259 C579 286 610 319 611 363 C612 388 603 407 591 420 L453 420 C474 389 486 357 484 325 C480 264 432 231 411 183 C393 143 402 100 430 63 C453 31 477 12 504 0 Z" fill="#eeeee8"/>
+  <path d="M604 344 C632 364 641 392 628 420 L580 420 C592 397 588 369 604 344 Z" fill="#eeeee8"/>
+  <path d="M770 71 C818 112 849 166 859 232 C866 279 878 331 900 365 L900 420 L760 420 C743 373 742 326 764 280 C786 235 783 194 756 154 C736 124 736 94 770 71 Z" fill="#eeeee8"/>
+  <path d="M145 0 C133 58 101 103 55 139 C35 154 16 169 0 186 L0 0 Z" fill="#eeeee8"/>
+  <path d="M54 152 C92 161 124 181 150 214 C106 212 58 206 0 195 L0 186 C16 169 35 154 54 152 Z" fill="#eeeee8"/>
+
+  <g stroke="#a7b1bb" stroke-width="2" fill="none" opacity=".9">
+    <path d="M500 164 C546 165 583 182 615 219"/>
+    <path d="M411 183 C445 177 475 182 505 199"/>
+    <path d="M756 154 C793 159 829 177 859 232"/>
+    <path d="M54 152 C88 146 120 151 151 166"/>
+  </g>
+
+  <g fill="#2f7a2e" opacity=".88" filter="url(#soft)">
+    <ellipse cx="498" cy="124" rx="9" ry="5"/>
+    <ellipse cx="524" cy="121" rx="14" ry="7"/>
+    <ellipse cx="549" cy="137" rx="18" ry="9"/>
+    <ellipse cx="579" cy="155" rx="21" ry="11"/>
+    <ellipse cx="604" cy="190" rx="27" ry="14"/>
+    <ellipse cx="626" cy="223" rx="34" ry="16"/>
+    <ellipse cx="666" cy="251" rx="42" ry="18"/>
+    <ellipse cx="736" cy="214" rx="52" ry="18" transform="rotate(15 736 214)"/>
+    <ellipse cx="776" cy="252" rx="44" ry="15" transform="rotate(12 776 252)"/>
+    <ellipse cx="246" cy="279" rx="36" ry="13" transform="rotate(18 246 279)"/>
+    <ellipse cx="339" cy="324" rx="48" ry="15" transform="rotate(11 339 324)"/>
+    <ellipse cx="409" cy="359" rx="50" ry="15" transform="rotate(12 409 359)"/>
+    <ellipse cx="0" cy="165" rx="28" ry="11"/>
+  </g>
+
+  <g fill="#f1c84b" opacity=".9" filter="url(#soft)">
+    <ellipse cx="568" cy="146" rx="13" ry="7"/>
+    <ellipse cx="598" cy="184" rx="17" ry="9"/>
+    <ellipse cx="621" cy="218" rx="21" ry="10"/>
+    <ellipse cx="651" cy="242" rx="19" ry="9"/>
+    <ellipse cx="744" cy="220" rx="22" ry="8" transform="rotate(15 744 220)"/>
+    <ellipse cx="367" cy="332" rx="21" ry="8" transform="rotate(13 367 332)"/>
+  </g>
+
+  <g fill="#ef7d36" opacity=".88" filter="url(#soft)">
+    <ellipse cx="586" cy="165" rx="10" ry="6"/>
+    <ellipse cx="614" cy="206" rx="14" ry="7"/>
+    <ellipse cx="637" cy="232" rx="11" ry="6"/>
+    <ellipse cx="752" cy="229" rx="12" ry="6" transform="rotate(15 752 229)"/>
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif" font-weight="800" fill="#111827" filter="url(#labelShadow)">
+    <text x="437" y="87" font-size="24">INDIA</text>
+    <text x="759" y="52" font-size="21">BANGLADESH</text>
+    <text x="811" y="121" font-size="16">Kolkata</text>
+    <text x="492" y="151" font-size="17">Mumbai</text>
+    <text x="602" y="259" font-size="17">Bengaluru</text>
+    <text x="625" y="340" font-size="22">SRI LANKA</text>
+    <text x="58" y="205" font-size="22">YEMEN</text>
+    <text x="185" y="38" font-size="17">Dubai</text>
+    <text x="0" y="20" font-size="18">ARABIA</text>
+  </g>
+
+  <g fill="#fff" stroke="#6b7280" stroke-width="1">
+    <circle cx="489" cy="142" r="5"/>
+    <circle cx="596" cy="248" r="5"/>
+    <circle cx="807" cy="112" r="5"/>
+    <circle cx="196" cy="31" r="5"/>
+  </g>
+</svg>

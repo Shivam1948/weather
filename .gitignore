@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+
+.env
+.env.*
+
+staticfiles/
+media/
+
+.vscode/
+.idea/
+
+# Older standalone prototype files; the Django app lives in forecast/,
+# weather_project/, templates/, and static/.
+app.js
+dev-server.js
+index.html
+styles.css

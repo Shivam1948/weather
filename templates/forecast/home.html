@@ -1,0 +1,236 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ city }} {{ section_title }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    {% if active_tab == 'radar' %}
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    {% endif %}
+    <link rel="stylesheet" href="{% static 'forecast/styles.css' %}" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="brand" href="{% url 'home' %}">
+          <span class="brand-mark">W</span>
+          <span>WeatherCast</span>
+        </a>
+        <form class="search" method="get">
+          <label class="sr-only" for="city">Search city</label>
+          <input id="city" name="city" type="search" value="{{ city }}" placeholder="Search city, zip code, or place" autocomplete="off" />
+          <button type="submit">Search</button>
+        </form>
+      </div>
+    </header>
+
+    <main class="page">
+      <section class="location-bar">
+        <div>
+          <p class="crumb">India Weather / {{ region|default:"Local Forecast" }}</p>
+          <h1>{{ city }}, {{ region|default:"Weather" }} {{ section_title }}</h1>
+        </div>
+        <div class="current-pill">
+          <span>{{ temperature }}&deg;C</span>
+          <small>{{ condition }}</small>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Weather sections">
+        <a class="{% if active_tab == 'today' %}active{% endif %}" href="{% url 'today' %}?city={{ query|urlencode }}">Today</a>
+        <a class="{% if active_tab == 'hourly' %}active{% endif %}" href="{% url 'home' %}?city={{ query|urlencode }}">Hourly</a>
+        <a class="{% if active_tab == 'ten_day' %}active{% endif %}" href="{% url 'ten_day' %}?city={{ query|urlencode }}">10-Day</a>
+        <a class="{% if active_tab == 'radar' %}active{% endif %}" href="{% url 'radar' %}?city={{ query|urlencode }}">Radar</a>
+        <a class="{% if active_tab == 'air_quality' %}active{% endif %}" href="{% url 'air_quality' %}?city={{ query|urlencode }}">Air Quality</a>
+        <a class="{% if active_tab == 'health' %}active{% endif %}" href="{% url 'health' %}?city={{ query|urlencode }}">Health & Activities</a>
+      </nav>
+
+      <div class="content-grid">
+        <section class="forecast-column">
+          <article class="summary-card">
+            <div>
+              <p class="card-label">{{ section_title }}</p>
+              <h2>{{ condition }}</h2>
+              <p class="summary-copy">
+                RealFeel {{ feels_like }}&deg;. {{ comfort }} conditions around {{ city }} with wind
+                {{ wind_direction }} {{ wind }} km/h and {{ rain }}% chance of rain today.
+              </p>
+            </div>
+            <div class="summary-temp">
+              <strong>{{ temperature }}&deg;</strong>
+              <span>Feels {{ feels_like }}&deg;</span>
+            </div>
+          </article>
+
+          {% if not_found %}
+            <p class="notice">City was not found, so Byculla West is displayed.</p>
+          {% elif offline %}
+            <p class="notice">Live weather is unavailable, showing sample forecast.</p>
+          {% endif %}
+
+          {% if active_tab == 'today' %}
+            <div class="today-grid">
+              <article class="data-card"><span>High / Low</span><strong>{{ max_temp }}&deg; / {{ min_temp }}&deg;</strong></article>
+              <article class="data-card"><span>Rain Probability</span><strong>{{ rain }}%</strong></article>
+              <article class="data-card"><span>Sunrise</span><strong>{{ sunrise }}</strong></article>
+              <article class="data-card"><span>Sunset</span><strong>{{ sunset }}</strong></article>
+              <article class="data-card"><span>Pressure</span><strong>{{ pressure }} mb</strong></article>
+              <article class="data-card"><span>Visibility</span><strong>{{ visibility }} km</strong></article>
+            </div>
+          {% elif active_tab == 'ten_day' %}
+            <div class="daily-list">
+              {% for day in days %}
+                <article class="day-row">
+                  <div><strong>{{ day.name }}</strong><span>{{ day.date }}</span></div>
+                  <span class="weather-icon {{ day.icon }}" aria-hidden="true"></span>
+                  <div class="day-condition">{{ day.condition }}</div>
+                  <div><strong>{{ day.high }}&deg;</strong><span>{{ day.low }}&deg;</span></div>
+                  <div class="rain"><span class="drop" aria-hidden="true"></span><strong>{{ day.rain }}%</strong></div>
+                  <div><span>Wind</span><strong>{{ day.wind }} km/h</strong></div>
+                </article>
+              {% endfor %}
+            </div>
+          {% elif active_tab == 'radar' %}
+            <div class="radar-panel">
+              <div
+                class="radar-map live-radar"
+                id="radarMap"
+                data-lat="{{ latitude }}"
+                data-lon="{{ longitude }}"
+                data-city="{{ city }}"
+                data-temp="{{ temperature }}"
+                data-condition="{{ condition }}"
+              >
+                <div class="radar-loading">
+                  <strong>Loading live radar...</strong>
+                  <span>RainViewer radar + OpenStreetMap</span>
+                </div>
+                <div class="radar-fallback">
+                  <img src="{% static 'forecast/india-radar.svg' %}" alt="Radar map over India" />
+                  <div class="map-shade"></div>
+                  <div class="radar-pin">
+                    <strong>{{ city }}</strong>
+                    <span>{{ temperature }}&deg; · {{ condition }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="radar-toolbar" id="radarToolbar" hidden>
+                <button type="button" id="radarPrev">Previous</button>
+                <button type="button" id="radarPlay">Play</button>
+                <button type="button" id="radarNext">Next</button>
+                <span id="radarTime">Latest radar frame</span>
+              </div>
+              <div class="radar-legend">
+                <span><i class="legend-light"></i>Light</span>
+                <span><i class="legend-medium"></i>Moderate</span>
+                <span><i class="legend-heavy"></i>Heavy</span>
+                <span><i class="legend-extreme"></i>Severe</span>
+              </div>
+              <div class="radar-details">
+                <article class="data-card"><span>Cloud Cover</span><strong>{{ clouds }}%</strong></article>
+                <article class="data-card"><span>Rain Probability</span><strong>{{ rain }}%</strong></article>
+                <article class="data-card"><span>Wind</span><strong>{{ wind_direction }} {{ wind }} km/h</strong></article>
+                <article class="data-card"><span>Coordinates</span><strong>{{ latitude|floatformat:2 }}, {{ longitude|floatformat:2 }}</strong></article>
+              </div>
+            </div>
+          {% elif active_tab == 'air_quality' %}
+            <div class="quality-card">
+              <div class="quality-score">{{ air_quality.score }}</div>
+              <div>
+                <p class="card-label">Air Quality Index</p>
+                <h2>{{ air_quality.label }}</h2>
+                <p class="summary-copy">{{ air_quality.note }}</p>
+              </div>
+            </div>
+            <div class="today-grid">
+              <article class="data-card"><span>Wind</span><strong>{{ wind_direction }} {{ wind }} km/h</strong></article>
+              <article class="data-card"><span>Humidity</span><strong>{{ humidity }}%</strong></article>
+              <article class="data-card"><span>Cloud Cover</span><strong>{{ clouds }}%</strong></article>
+              <article class="data-card"><span>Visibility</span><strong>{{ visibility }} km</strong></article>
+            </div>
+          {% elif active_tab == 'health' %}
+            <div class="health-list">
+              {% for item in health_items %}
+                <article class="health-card">
+                  <span>{{ item.name }}</span>
+                  <strong>{{ item.level }}</strong>
+                  <p>{{ item.detail }}</p>
+                </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="hourly-list">
+              {% for hour in hours %}
+                <article class="hour-row">
+                  <div class="hour-main">
+                    <time>{{ hour.time }}</time>
+                    <span class="weather-icon {{ hour.icon }}" aria-hidden="true"></span>
+                    <div class="temperature">
+                      <strong>{{ hour.temp }}&deg;</strong>
+                      <span>RealFeel&reg; {{ hour.realfeel }}&deg;</span>
+                    </div>
+                    <div class="feel-label">
+                      <strong>{{ hour.label }}</strong>
+                      <span>{{ hour.condition }}</span>
+                    </div>
+                    <div class="rain">
+                      <span class="drop" aria-hidden="true"></span>
+                      <strong>{{ hour.rain }}%</strong>
+                    </div>
+                  </div>
+
+                  <div class="hour-details">
+                    <p><span>Wind</span><strong>{{ hour.wind }}</strong></p>
+                    <p><span>Wind Gusts</span><strong>{{ hour.gusts }}</strong></p>
+                    <p><span>Humidity</span><strong>{{ hour.humidity }}%</strong></p>
+                    <p><span>Dew Point</span><strong>{{ hour.dew_point }}&deg; C</strong></p>
+                    <p><span>Cloud Cover</span><strong>{{ hour.clouds }}%</strong></p>
+                    <p><span>Visibility</span><strong>{{ hour.visibility }} km</strong></p>
+                    <p><span>UV Index</span><strong>{{ hour.uv }}</strong></p>
+                    <p><span>Air Quality</span><strong>{{ air_quality.label }}</strong></p>
+                  </div>
+                </article>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </section>
+
+        <aside class="side-column">
+          <article class="side-card">
+            <p class="card-label">Current Weather</p>
+            <div class="side-temp">{{ temperature }}&deg;</div>
+            <h3>{{ condition }}</h3>
+            <p>RealFeel&reg; {{ feels_like }}&deg;</p>
+            <div class="mini-grid">
+              <span>Humidity</span><strong>{{ humidity }}%</strong>
+              <span>Cloud Cover</span><strong>{{ clouds }}%</strong>
+              <span>Wind Gusts</span><strong>{{ gusts }} km/h</strong>
+              <span>Visibility</span><strong>{{ visibility }} km</strong>
+            </div>
+          </article>
+
+          <article class="side-card">
+            <p class="card-label">Today</p>
+            <div class="range-row">
+              <span>High</span><strong>{{ max_temp }}&deg;</strong>
+            </div>
+            <div class="range-row">
+              <span>Low</span><strong>{{ min_temp }}&deg;</strong>
+            </div>
+            <div class="range-row">
+              <span>Pressure</span><strong>{{ pressure }} mb</strong>
+            </div>
+          </article>
+        </aside>
+      </div>
+    </main>
+    {% if active_tab == 'radar' %}
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <script src="{% static 'forecast/radar.js' %}"></script>
+    {% endif %}
+  </body>
+</html>
