@@ -23,13 +23,46 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
-    'django-insecure-dev-only-change-me',
+    os.environ.get('SECRET_KEY'),
 )
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+if not SECRET_KEY:
+    SECRET_KEY = (
+        'django-insecure-dev-only-change-me'
+        if not os.environ.get('RENDER')
+        else ''
+    )
 
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "testserver"]
+DEBUG = os.environ.get(
+    'DEBUG',
+    'False' if os.environ.get('RENDER') else 'True',
+).lower() == 'true'
+
+allowed_hosts = [
+    '127.0.0.1',
+    'localhost',
+    'testserver',
+]
+
+render_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if render_hostname:
+    allowed_hosts.append(render_hostname)
+
+extra_allowed_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS')
+if extra_allowed_hosts:
+    allowed_hosts.extend(
+        host.strip()
+        for host in extra_allowed_hosts.split(',')
+        if host.strip()
+    )
+
+ALLOWED_HOSTS = allowed_hosts
+
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}'
+    for host in ALLOWED_HOSTS
+    if host not in {'127.0.0.1', 'localhost', 'testserver'}
+]
 
 
 # Application definition
@@ -46,6 +79,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -121,3 +155,5 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
